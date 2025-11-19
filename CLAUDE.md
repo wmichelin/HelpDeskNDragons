@@ -175,3 +175,63 @@ The complete game design is in `design-doc.md` (v3.0), which includes:
 - Week-by-week development roadmap
 
 Refer to design-doc.md for specific implementation details, upgrade descriptions, and balance tuning targets.
+
+## MCP Server Usage Rules
+
+### MANDATORY: Always use Context7 MCP for code generation
+**When writing ANY C# code, Unity scripts, or implementing game features:**
+1. **ALWAYS call `mcp__context7__resolve-library-id`** first to get documentation for relevant libraries (Unity, C#, Input System, etc.)
+2. **ALWAYS call `mcp__context7__get-library-docs`** with the resolved library ID to retrieve up-to-date API documentation and best practices
+3. Use the retrieved documentation to ensure code follows current Unity best practices and APIs
+4. This applies to ALL code generation tasks, including:
+   - Creating new C# scripts
+   - Modifying existing Unity components
+   - Implementing gameplay systems
+   - Writing editor tools
+   - Any other code-related tasks
+
+**Example workflow for creating a Unity script:**
+1. Call `resolve-library-id` for "Unity" or specific Unity packages (e.g., "Unity Input System")
+2. Call `get-library-docs` with the resolved library ID and relevant topic (e.g., "MonoBehaviour lifecycle", "Input System actions")
+3. Write code using the retrieved documentation as reference
+4. Use Unity MCP tools to create/modify the script in the editor
+
+### MANDATORY: Always use Unity MCP for editor operations
+**When interacting with Unity Editor or build tooling:**
+1. **Use Unity MCP resources** to read editor state before making changes:
+   - Check `editor_state` resource for compilation status, play mode, etc.
+   - Check `project_info` for project structure
+   - Check `tests` resource for test status
+2. **Use Unity MCP tools** for ALL Unity operations:
+   - `manage_editor` - Play/pause/stop, editor state queries
+   - `manage_scene` - Scene creation, loading, hierarchy inspection
+   - `manage_gameobject` - GameObject and component operations
+   - `manage_asset` - Asset import, creation, modification
+   - `manage_script` / `script_apply_edits` - Script creation and editing
+   - `manage_prefabs` - Prefab operations
+   - `read_console` - Check for compilation errors after script changes
+   - `run_tests` - Execute Unity test suites
+3. **Always check `read_console`** after creating or modifying scripts to verify compilation success
+4. **Never proceed** with operations that depend on new components/types until compilation completes
+
+**Example workflow for creating a GameObject with custom component:**
+1. Use Context7 to get Unity documentation for component implementation
+2. Create the C# script using `manage_script` or `script_apply_edits`
+3. Call `read_console` to verify compilation succeeded
+4. Use `manage_gameobject` with action="create" to create GameObject
+5. Use `manage_gameobject` with action="add_component" to attach the compiled component
+
+### Integration Guidelines
+- **Context7 is for KNOWLEDGE** - Use it to learn APIs, patterns, and best practices before writing code
+- **Unity MCP is for EXECUTION** - Use it to actually create, modify, and inspect Unity project elements
+- **Always use BOTH** when implementing Unity features:
+  1. Context7 → Get documentation
+  2. Write informed code
+  3. Unity MCP → Apply to project
+  4. Unity MCP → Verify results (console, editor state)
+
+### Prohibited Actions
+- **NEVER** write Unity code without consulting Context7 documentation first
+- **NEVER** use generic file operations (Read/Write tools) for Unity scripts when Unity MCP tools are available
+- **NEVER** assume compilation succeeded without checking `read_console`
+- **NEVER** use bash commands for Unity operations when Unity MCP tools exist
